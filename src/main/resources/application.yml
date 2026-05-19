@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: gateway
+
+  profiles:
+    default: local
+
+  cloud:
+    gateway:
+      routes:
+        - id: main
+          uri: http://main:8081
+          predicates:
+            - Path=/api/**
+        - id: notification
+          uri: http://notification:8082
+          predicates:
+            - Path=/notification/**
+        - id: chat
+          uri: http://chat:8083
+          predicates:
+            - Path=/chat/**
+
+server:
+  port: 8080

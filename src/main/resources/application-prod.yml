@@ -1,0 +1,16 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: main
+          uri: ${MAIN_SERVICE_URL}
+          predicates:
+            - Path=/api/**
+        - id: notification
+          uri: ${NOTIFICATION_SERVICE_URL}
+          predicates:
+            - Path=/notification/**
+        - id: chat
+          uri: ${CHAT_SERVICE_URL}
+          predicates:
+            - Path=/chat/**
