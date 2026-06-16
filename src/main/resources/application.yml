@@ -23,3 +23,9 @@ spring:
 
 server:
   port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:local-development-secret-key-at-least-32-bytes}
+  issuer: together-trip
+  access-token-expiration: 1800
+  refresh-token-expiration: 1209600

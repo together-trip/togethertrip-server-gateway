@@ -1,5 +1,6 @@
 package com.togethertrip.gateway.global.logging
 
+import com.togethertrip.gateway.global.security.GatewayAuthenticationFilter
 import org.junit.jupiter.api.Test
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.route.Route
@@ -44,7 +45,7 @@ class GatewayRequestLoggingFilterTest {
         val exchange = MockServerWebExchange.from(
             MockServerHttpRequest.get("/api/trips")
                 .header(GatewayRequestLoggingFilter.REQUEST_ID_HEADER, "request-123")
-                .header(GatewayRequestLoggingFilter.SPOOFABLE_USER_ID_HEADER, "999")
+                .header(GatewayAuthenticationFilter.USER_ID_HEADER, "999")
                 .build(),
         )
 
@@ -55,7 +56,7 @@ class GatewayRequestLoggingFilterTest {
                     routedExchange.request.headers.getFirst(GatewayRequestLoggingFilter.REQUEST_ID_HEADER),
                 )
                 assertNull(
-                    routedExchange.request.headers.getFirst(GatewayRequestLoggingFilter.SPOOFABLE_USER_ID_HEADER),
+                    routedExchange.request.headers.getFirst(GatewayAuthenticationFilter.USER_ID_HEADER),
                 )
                 routedExchange.response.statusCode = HttpStatus.OK
                 Mono.empty()
