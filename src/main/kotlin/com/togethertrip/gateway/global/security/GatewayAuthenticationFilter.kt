@@ -123,6 +123,8 @@ class GatewayAuthenticationFilter(
             "/actuator",
             "/swagger-ui",
             "/v3/api-docs",
+            "/uploads/post-attachments",
+            "/uploads/user-profile-images",
         )
     }
 }
