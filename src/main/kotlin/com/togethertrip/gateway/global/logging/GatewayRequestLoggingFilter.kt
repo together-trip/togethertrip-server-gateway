@@ -1,5 +1,6 @@
 package com.togethertrip.gateway.global.logging
 
+import com.togethertrip.gateway.global.security.GatewayAuthenticationFilter
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
@@ -27,7 +28,8 @@ class GatewayRequestLoggingFilter(
         val failure = AtomicReference<Throwable?>()
         val request = exchange.request.mutate()
             .headers {
-                it.remove(SPOOFABLE_USER_ID_HEADER)
+                it.remove(GatewayAuthenticationFilter.USER_ID_HEADER)
+                it.remove(GatewayAuthenticationFilter.USER_ROLE_HEADER)
                 it.set(REQUEST_ID_HEADER, requestId)
             }
             .build()
@@ -105,7 +107,6 @@ class GatewayRequestLoggingFilter(
 
     companion object {
         const val REQUEST_ID_HEADER = "X-Request-Id"
-        const val SPOOFABLE_USER_ID_HEADER = "X-User-Id"
         private const val MAX_REQUEST_ID_LENGTH = 100
         private val REQUEST_ID_PATTERN = Regex("[A-Za-z0-9._:-]+")
     }

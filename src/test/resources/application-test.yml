@@ -2,3 +2,9 @@ spring:
   cloud:
     gateway:
       routes: []
+
+jwt:
+  secret: test-development-secret-key-at-least-32-bytes
+  issuer: together-trip
+  access-token-expiration: 1800
+  refresh-token-expiration: 1209600
