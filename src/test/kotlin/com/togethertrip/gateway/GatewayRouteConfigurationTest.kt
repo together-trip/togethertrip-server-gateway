@@ -9,33 +9,40 @@ import kotlin.test.assertTrue
 class GatewayRouteConfigurationTest {
 
     @Test
-    fun `기본 라우트는 main notification chat uploads 경로를 등록한다`() {
+    fun `기본 라우트는 로컬 단독 실행용 localhost fallback을 가진다`() {
         val routes = loadRoutes("application.yml")
 
         assertRoute(
             routes = routes,
             id = "main",
-            uri = "http://main:8081",
+            uri = "\${MAIN_SERVICE_URL:http://localhost:8081}",
             path = "Path=/api/**",
         )
         assertRoute(
             routes = routes,
             id = "uploads-static",
-            uri = "http://main:8081",
+            uri = "\${MAIN_SERVICE_URL:http://localhost:8081}",
             path = "Path=/uploads/post-attachments/**,/uploads/user-profile-images/**",
         )
         assertRoute(
             routes = routes,
             id = "notification",
-            uri = "http://notification:8082",
+            uri = "\${NOTIFICATION_SERVICE_URL:http://localhost:8082}",
             path = "Path=/notification/**",
         )
         assertRoute(
             routes = routes,
             id = "chat",
-            uri = "http://chat:8083",
+            uri = "\${CHAT_SERVICE_URL:http://localhost:8083}",
             path = "Path=/chat/**",
         )
+    }
+
+    @Test
+    fun `local profile은 기본 라우트를 잘못된 namespace로 덮어쓰지 않는다`() {
+        val routes = loadRoutes("application-local.yml", expectedSize = 0)
+
+        assertTrue(routes.isEmpty())
     }
 
     @Test
@@ -83,7 +90,10 @@ class GatewayRouteConfigurationTest {
         )
     }
 
-    private fun loadRoutes(resourceName: String): List<RouteDefinition> {
+    private fun loadRoutes(
+        resourceName: String,
+        expectedSize: Int = 4,
+    ): List<RouteDefinition> {
         val properties = YamlPropertiesFactoryBean().apply {
             setResources(ClassPathResource(resourceName))
         }.getObject() ?: error("failed to load $resourceName")
@@ -105,7 +115,7 @@ class GatewayRouteConfigurationTest {
             index += 1
         }
 
-        assertEquals(4, routes.size)
+        assertEquals(expectedSize, routes.size)
         return routes
     }
 

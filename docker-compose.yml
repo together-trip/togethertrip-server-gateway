@@ -87,6 +87,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
       JWT_SECRET: local-development-secret-key-at-least-32-bytes
+      MAIN_SERVICE_URL: http://main:8081
+      NOTIFICATION_SERVICE_URL: http://notification:8082
+      CHAT_SERVICE_URL: http://chat:8083
     depends_on:
       - main
       - notification

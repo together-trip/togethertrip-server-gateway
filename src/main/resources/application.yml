@@ -11,19 +11,19 @@ spring:
         webflux:
           routes:
             - id: main
-              uri: http://main:8081
+              uri: ${MAIN_SERVICE_URL:http://localhost:8081}
               predicates:
                 - Path=/api/**
             - id: uploads-static
-              uri: http://main:8081
+              uri: ${MAIN_SERVICE_URL:http://localhost:8081}
               predicates:
                 - Path=/uploads/post-attachments/**,/uploads/user-profile-images/**
             - id: notification
-              uri: http://notification:8082
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8082}
               predicates:
                 - Path=/notification/**
             - id: chat
-              uri: http://chat:8083
+              uri: ${CHAT_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=/chat/**
 
