@@ -51,11 +51,22 @@ class GatewayAuthenticationFilterTest {
     @ParameterizedTest
     @ValueSource(
         strings = [
-            "/uploads/post-attachments/trip-photo.jpg",
-            "/uploads/user-profile-images/profile.png",
+            "/api/auth/oauth/kakao",
+            "/api/auth/phone/request",
+            "/api/auth/phone/confirm",
+            "/api/auth/refresh",
+            "/api/terms",
+            "/api/users/nicknames/availability",
+            "/health",
+            "/actuator/health",
+            "/swagger-ui/index.html",
+            "/swagger-ui.html",
+            "/v3/api-docs",
+            "/uploads/post-attachments/sample.jpg",
+            "/uploads/user-profile-images/sample.jpg",
         ],
     )
-    fun `업로드 정적 파일 경로는 토큰 없이 통과한다`(path: String) {
+    fun `main 공개 경로는 gateway에서도 토큰 없이 통과한다`(path: String) {
         val exchange = MockServerWebExchange.from(
             MockServerHttpRequest.get(path).build(),
         )

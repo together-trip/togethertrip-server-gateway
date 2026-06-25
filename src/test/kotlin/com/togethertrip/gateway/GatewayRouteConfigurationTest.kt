@@ -9,31 +9,76 @@ import kotlin.test.assertTrue
 class GatewayRouteConfigurationTest {
 
     @Test
-    fun `기본 라우트는 업로드 정적 파일을 main 서비스로 전달한다`() {
+    fun `기본 라우트는 main notification chat uploads 경로를 등록한다`() {
         val routes = loadRoutes("application.yml")
 
-        assertTrue(
-            routes.any {
-                it.id == "uploads-static" &&
-                    it.uri == "http://main:8081" &&
-                    it.predicates.contains(
-                        "Path=/uploads/post-attachments/**,/uploads/user-profile-images/**",
-                    )
-            },
+        assertRoute(
+            routes = routes,
+            id = "main",
+            uri = "http://main:8081",
+            path = "Path=/api/**",
+        )
+        assertRoute(
+            routes = routes,
+            id = "uploads-static",
+            uri = "http://main:8081",
+            path = "Path=/uploads/post-attachments/**,/uploads/user-profile-images/**",
+        )
+        assertRoute(
+            routes = routes,
+            id = "notification",
+            uri = "http://notification:8082",
+            path = "Path=/notification/**",
+        )
+        assertRoute(
+            routes = routes,
+            id = "chat",
+            uri = "http://chat:8083",
+            path = "Path=/chat/**",
         )
     }
 
     @Test
-    fun `운영 라우트는 업로드 정적 파일을 main 서비스로 전달한다`() {
+    fun `운영 라우트는 main notification chat uploads 경로를 등록한다`() {
         val routes = loadRoutes("application-prod.yml")
 
+        assertRoute(
+            routes = routes,
+            id = "main",
+            uri = "\${MAIN_SERVICE_URL}",
+            path = "Path=/api/**",
+        )
+        assertRoute(
+            routes = routes,
+            id = "uploads-static",
+            uri = "\${MAIN_SERVICE_URL}",
+            path = "Path=/uploads/post-attachments/**,/uploads/user-profile-images/**",
+        )
+        assertRoute(
+            routes = routes,
+            id = "notification",
+            uri = "\${NOTIFICATION_SERVICE_URL}",
+            path = "Path=/notification/**",
+        )
+        assertRoute(
+            routes = routes,
+            id = "chat",
+            uri = "\${CHAT_SERVICE_URL}",
+            path = "Path=/chat/**",
+        )
+    }
+
+    private fun assertRoute(
+        routes: List<RouteDefinition>,
+        id: String,
+        uri: String,
+        path: String,
+    ) {
         assertTrue(
             routes.any {
-                it.id == "uploads-static" &&
-                    it.uri == "\${MAIN_SERVICE_URL}" &&
-                    it.predicates.contains(
-                        "Path=/uploads/post-attachments/**,/uploads/user-profile-images/**",
-                    )
+                it.id == id &&
+                    it.uri == uri &&
+                    it.predicates.contains(path)
             },
         )
     }

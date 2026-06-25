@@ -117,6 +117,11 @@ class GatewayAuthenticationFilter(
             "/api/auth/phone/request",
             "/api/auth/phone/confirm",
             "/api/auth/refresh",
+            "/api/terms",
+            "/api/users/nicknames/availability",
+            "/health",
+            "/actuator/health",
+            "/swagger-ui.html",
         )
 
         private val PUBLIC_PATH_PREFIXES = listOf(

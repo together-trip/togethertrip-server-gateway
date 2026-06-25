@@ -49,7 +49,7 @@ services:
       context: ../togethertrip-server-notification
     environment:
       SPRING_PROFILES_ACTIVE: local
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/together_trip
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/together_trip_notification
       SPRING_DATASOURCE_USERNAME: together_trip
       SPRING_DATASOURCE_PASSWORD: together_trip
       SPRING_REDIS_HOST: redis
