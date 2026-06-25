@@ -5,6 +5,8 @@ import com.togethertrip.gateway.global.security.jwt.JwtTokenProvider
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
@@ -33,6 +35,29 @@ class GatewayAuthenticationFilterTest {
     fun `공개 경로는 토큰 없이 통과한다`() {
         val exchange = MockServerWebExchange.from(
             MockServerHttpRequest.post("/api/auth/phone/request").build(),
+        )
+        var called = false
+
+        StepVerifier.create(
+            filter.filter(exchange) {
+                called = true
+                Mono.empty()
+            },
+        ).verifyComplete()
+
+        assertEquals(true, called)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "/uploads/post-attachments/trip-photo.jpg",
+            "/uploads/user-profile-images/profile.png",
+        ],
+    )
+    fun `업로드 정적 파일 경로는 토큰 없이 통과한다`(path: String) {
+        val exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get(path).build(),
         )
         var called = false
 
