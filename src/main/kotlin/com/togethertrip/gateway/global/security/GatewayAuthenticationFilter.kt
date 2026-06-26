@@ -128,6 +128,7 @@ class GatewayAuthenticationFilter(
             "/actuator",
             "/swagger-ui",
             "/v3/api-docs",
+            "/api/local-test",
             "/uploads/post-attachments",
             "/uploads/user-profile-images",
         )
