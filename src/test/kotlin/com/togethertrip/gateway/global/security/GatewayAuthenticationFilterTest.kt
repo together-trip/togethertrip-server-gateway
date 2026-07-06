@@ -28,6 +28,7 @@ class GatewayAuthenticationFilterTest {
     )
     private val filter = GatewayAuthenticationFilter(
         jwtTokenProvider = JwtTokenProvider(jwtProperties),
+        gatewaySecurityProperties = GatewaySecurityProperties(),
         localTestEnabled = false,
     )
 
@@ -167,6 +168,7 @@ class GatewayAuthenticationFilterTest {
     fun `local-test 토큰은 local 테스트 인증이 켜져 있으면 downstream으로 넘긴다`() {
         val localTestFilter = GatewayAuthenticationFilter(
             jwtTokenProvider = JwtTokenProvider(jwtProperties),
+            gatewaySecurityProperties = GatewaySecurityProperties(),
             localTestEnabled = true,
         )
         val exchange = MockServerWebExchange.from(
