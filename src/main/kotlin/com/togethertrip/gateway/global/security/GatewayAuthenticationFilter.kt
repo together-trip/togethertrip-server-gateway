@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono
 @Component
 class GatewayAuthenticationFilter(
     private val jwtTokenProvider: JwtTokenProvider,
+    private val gatewaySecurityProperties: GatewaySecurityProperties,
     @Value("\${auth.local-test.enabled:false}")
     private val localTestEnabled: Boolean,
 ) : GlobalFilter, Ordered {
@@ -78,7 +79,8 @@ class GatewayAuthenticationFilter(
 
     private fun isPublicPath(exchange: ServerWebExchange): Boolean {
         val path = exchange.request.path.pathWithinApplication().value()
-        return path in PUBLIC_PATHS || PUBLIC_PATH_PREFIXES.any(path::startsWith)
+        return path in gatewaySecurityProperties.publicPaths ||
+            gatewaySecurityProperties.publicPathPrefixes.any(path::startsWith)
     }
 
     private fun resolveToken(exchange: ServerWebExchange): String? {
@@ -111,26 +113,5 @@ class GatewayAuthenticationFilter(
         const val USER_ROLE_HEADER = "X-User-Role"
         private const val BEARER_PREFIX = "Bearer "
         private const val LOCAL_TEST_TOKEN_PREFIX = "local-test:"
-
-        private val PUBLIC_PATHS = setOf(
-            "/api/auth/oauth/kakao",
-            "/api/auth/phone/request",
-            "/api/auth/phone/confirm",
-            "/api/auth/refresh",
-            "/api/terms",
-            "/api/users/nicknames/availability",
-            "/health",
-            "/actuator/health",
-            "/swagger-ui.html",
-        )
-
-        private val PUBLIC_PATH_PREFIXES = listOf(
-            "/actuator",
-            "/swagger-ui",
-            "/v3/api-docs",
-            "/api/local-test",
-            "/uploads/post-attachments",
-            "/uploads/user-profile-images",
-        )
     }
 }
