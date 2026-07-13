@@ -29,6 +29,8 @@ services:
   main:
     build:
       context: ../togethertrip-server-main
+    volumes:
+      - ../togethertrip-server-main/uploads:/app/uploads
     environment:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/together_trip
@@ -37,6 +39,7 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       JWT_SECRET: local-development-secret-key-at-least-32-bytes
+      OPENAPI_SERVER_URL: http://localhost:8081
     depends_on:
       postgres:
         condition: service_healthy
