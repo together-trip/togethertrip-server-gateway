@@ -7,19 +7,31 @@ spring:
 
   cloud:
     gateway:
-      routes:
-        - id: main
-          uri: http://main:8081
-          predicates:
-            - Path=/api/**
-        - id: notification
-          uri: http://notification:8082
-          predicates:
-            - Path=/notification/**
-        - id: chat
-          uri: http://chat:8083
-          predicates:
-            - Path=/chat/**
+      server:
+        webflux:
+          routes:
+            - id: main
+              uri: ${MAIN_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/**
+            - id: uploads-static
+              uri: ${MAIN_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/uploads/post-attachments/**,/uploads/user-profile-images/**
+            - id: notification
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/notification/**
+            - id: chat
+              uri: ${CHAT_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/chat/**
 
 server:
   port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:local-development-secret-key-at-least-32-bytes}
+  issuer: together-trip
+  access-token-expiration: 1800
+  refresh-token-expiration: 1209600
