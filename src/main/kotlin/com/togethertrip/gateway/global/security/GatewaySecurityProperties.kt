@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 class GatewaySecurityProperties {
     var publicPaths: List<String> = listOf(
         "/api/auth/oauth/kakao",
+        "/api/auth/oauth/apple",
         "/api/auth/phone/request",
         "/api/auth/phone/confirm",
         "/api/auth/refresh",

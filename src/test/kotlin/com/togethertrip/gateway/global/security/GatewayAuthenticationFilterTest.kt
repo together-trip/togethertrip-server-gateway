@@ -35,7 +35,7 @@ class GatewayAuthenticationFilterTest {
     @Test
     fun `공개 경로는 토큰 없이 통과한다`() {
         val exchange = MockServerWebExchange.from(
-            MockServerHttpRequest.post("/api/auth/phone/request").build(),
+            MockServerHttpRequest.post("/api/auth/oauth/apple").build(),
         )
         var called = false
 
@@ -53,6 +53,7 @@ class GatewayAuthenticationFilterTest {
     @ValueSource(
         strings = [
             "/api/auth/oauth/kakao",
+            "/api/auth/oauth/apple",
             "/api/auth/phone/request",
             "/api/auth/phone/confirm",
             "/api/auth/refresh",
