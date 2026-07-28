@@ -99,6 +99,22 @@ class GatewayAuthenticationFilterTest {
         assertEquals(HttpStatus.UNAUTHORIZED, exchange.response.statusCode)
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["/api/users/me", "/notification/api/push-tokens"])
+    fun `계정과 push token 삭제 경로는 공개 경로가 아니다`(path: String) {
+        val exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.delete(path).build(),
+        )
+
+        StepVerifier.create(
+            filter.filter(exchange) {
+                Mono.error(AssertionError("downstream should not be called"))
+            },
+        ).verifyComplete()
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.response.statusCode)
+    }
+
     @Test
     fun `access token이 유효하면 사용자 헤더를 downstream에 전달한다`() {
         val exchange = MockServerWebExchange.from(
