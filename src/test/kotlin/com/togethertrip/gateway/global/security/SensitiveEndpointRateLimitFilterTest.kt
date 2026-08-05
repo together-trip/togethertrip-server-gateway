@@ -52,6 +52,37 @@ class SensitiveEndpointRateLimitFilterTest {
         repeat(3) { assertPass(post("/api/trips", "192.0.2.30")) }
     }
 
+    @Test
+    fun `trusted proxy가 정제한 client IP를 로그인 key로 사용한다`() {
+        val transformer = TrustedProxyForwardedHeaderConfiguration(
+            GatewayTrustedProxyProperties().apply { cidrs = listOf("10.0.0.0/8") },
+        ).forwardedHeaderTransformer()
+        val firstClient = proxiedLogin(transformer, proxyIp = "10.0.0.10", clientIp = "198.51.100.101")
+        val secondClient = proxiedLogin(transformer, proxyIp = "10.0.0.10", clientIp = "198.51.100.102")
+
+        assertPass(firstClient)
+        assertPass(secondClient)
+
+        val limited = proxiedLogin(transformer, proxyIp = "10.0.0.10", clientIp = "198.51.100.101")
+        StepVerifier.create(filter.filter(limited) { Mono.error(AssertionError("downstream should not be called")) })
+            .verifyComplete()
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.response.statusCode)
+    }
+
+    @Test
+    fun `신뢰하지 않은 요청의 XFF는 로그인 key를 바꾸지 못한다`() {
+        val transformer = TrustedProxyForwardedHeaderConfiguration(
+            GatewayTrustedProxyProperties().apply { cidrs = listOf("10.0.0.0/8") },
+        ).forwardedHeaderTransformer()
+
+        assertPass(proxiedLogin(transformer, proxyIp = "192.0.2.201", clientIp = "198.51.100.201"))
+        val limited = proxiedLogin(transformer, proxyIp = "192.0.2.201", clientIp = "198.51.100.202")
+
+        StepVerifier.create(filter.filter(limited) { Mono.error(AssertionError("downstream should not be called")) })
+            .verifyComplete()
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.response.statusCode)
+    }
+
     private fun assertPass(exchange: MockServerWebExchange) {
         var called = false
         StepVerifier.create(
@@ -75,4 +106,22 @@ class SensitiveEndpointRateLimitFilterTest {
             .header(GatewayAuthenticationFilter.USER_ID_HEADER, userId)
             .build(),
     )
+
+    private fun proxiedLogin(
+        transformer: org.springframework.web.server.adapter.ForwardedHeaderTransformer,
+        proxyIp: String,
+        clientIp: String,
+    ): MockServerWebExchange {
+        val request = MockServerHttpRequest.post("http://gateway/api/auth/oauth/apple")
+            .remoteAddress(InetSocketAddress(proxyIp, 43100))
+            .header("X-Forwarded-Proto", "https")
+            .header("X-Forwarded-For", clientIp)
+            .build()
+        val transformed = transformer.apply(request)
+        val mockRequest = MockServerHttpRequest.post(transformed.uri.toString())
+            .headers(transformed.headers)
+            .remoteAddress(transformed.remoteAddress!!)
+            .build()
+        return MockServerWebExchange.from(mockRequest)
+    }
 }

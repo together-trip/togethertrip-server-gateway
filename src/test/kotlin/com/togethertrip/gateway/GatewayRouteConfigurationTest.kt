@@ -59,6 +59,7 @@ class GatewayRouteConfigurationTest {
         val properties = loadProperties("application-prod.yml")
         assertEquals("none", properties.getProperty("server.forward-headers-strategy"))
         assertEquals("true", properties.getProperty("gateway.transport-security.require-https"))
+        assertEquals("true", properties.getProperty("gateway.cors.require-https-origins"))
         assertEquals(
             "\${GATEWAY_CORS_ALLOWED_ORIGINS}",
             properties.getProperty("gateway.cors.allowed-origins"),

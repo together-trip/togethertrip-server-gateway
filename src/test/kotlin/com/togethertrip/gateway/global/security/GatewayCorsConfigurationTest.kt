@@ -48,8 +48,20 @@ class GatewayCorsConfigurationTest {
     }
 
     @Test
-    fun `credentials를 허용할 때 wildcard origin 설정은 실패한다`() {
+    fun `wildcard origin 설정은 실패한다`() {
         val properties = GatewayCorsProperties().apply { allowedOrigins = listOf("*") }
+
+        assertFailsWith<IllegalStateException> {
+            GatewayCorsConfiguration(properties).corsWebFilter()
+        }
+    }
+
+    @Test
+    fun `운영 CORS origin은 HTTPS만 허용한다`() {
+        val properties = GatewayCorsProperties().apply {
+            allowedOrigins = listOf("http://app.togethertrip.co.kr")
+            requireHttpsOrigins = true
+        }
 
         assertFailsWith<IllegalStateException> {
             GatewayCorsConfiguration(properties).corsWebFilter()

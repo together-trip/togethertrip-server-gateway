@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
 import java.net.InetSocketAddress
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class TrustedProxyForwardedHeaderConfigurationTest {
@@ -58,5 +59,16 @@ class TrustedProxyForwardedHeaderConfigurationTest {
 
         assertEquals("https", transformed.uri.scheme)
         assertEquals("198.51.100.8", transformed.remoteAddress?.hostString)
+    }
+
+    @Test
+    fun `모든 주소를 신뢰하는 CIDR은 시작 시 거부한다`() {
+        val configuration = TrustedProxyForwardedHeaderConfiguration(
+            GatewayTrustedProxyProperties().apply { cidrs = listOf("0.0.0.0/0") },
+        )
+
+        assertFailsWith<IllegalStateException> {
+            configuration.forwardedHeaderTransformer()
+        }
     }
 }

@@ -68,7 +68,7 @@ class TrustedProxyForwardedHeaderConfiguration(
                 val address = InetAddress.getByName(parts[0])
                 val prefixLength = parts[1].toIntOrNull()
                     ?: error("trusted proxy CIDR prefix is invalid: $value")
-                check(prefixLength in 0..(address.address.size * 8)) {
+                check(prefixLength in 1..(address.address.size * 8)) {
                     "trusted proxy CIDR prefix is out of range: $value"
                 }
                 return IpNetwork(address.address, prefixLength)
