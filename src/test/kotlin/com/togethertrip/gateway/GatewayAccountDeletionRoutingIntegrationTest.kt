@@ -7,6 +7,8 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -100,6 +102,57 @@ class GatewayAccountDeletionRoutingIntegrationTest {
         webTestClient().delete()
             .uri("/api/users/me")
             .header("Authorization", "Bearer ${createToken(7L, "ACCESS", forged = true)}")
+            .exchange()
+            .expectStatus().isUnauthorized
+
+        assertEquals(0, receivedRequests.size)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "/api/auth/oauth/kakao",
+            "/api/auth/oauth/apple",
+            "/api/auth/refresh",
+        ],
+    )
+    fun `출시 로그인 API는 토큰 없이 main에 전달한다`(path: String) {
+        webTestClient().post()
+            .uri(path)
+            .exchange()
+            .expectStatus().isNoContent
+
+        val request = receivedRequests.single()
+        assertEquals("POST", request.method)
+        assertEquals(path, request.uri)
+        assertEquals(null, request.userId)
+        assertEquals(null, request.userRole)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["/api/trips/7/reports", "/api/users/8/blocks"])
+    fun `신고와 차단 API는 access token claim만 사용자 헤더로 전달한다`(path: String) {
+        val token = createToken(userId = 321L, tokenType = "ACCESS")
+
+        webTestClient().post()
+            .uri(path)
+            .header("Authorization", "Bearer $token")
+            .header(GatewayAuthenticationFilter.USER_ID_HEADER, "999")
+            .header(GatewayAuthenticationFilter.USER_ROLE_HEADER, "ADMIN")
+            .exchange()
+            .expectStatus().isNoContent
+
+        val request = receivedRequests.single()
+        assertEquals(path, request.uri)
+        assertEquals("321", request.userId)
+        assertEquals("USER", request.userRole)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["/api/trips/7/reports", "/api/users/8/blocks", "/api/users/me/blocks"])
+    fun `신고와 차단 API는 토큰 없이는 downstream에 도달하지 않는다`(path: String) {
+        webTestClient().post()
+            .uri(path)
             .exchange()
             .expectStatus().isUnauthorized
 
