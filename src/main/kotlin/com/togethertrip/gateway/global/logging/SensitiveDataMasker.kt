@@ -4,7 +4,7 @@ object SensitiveDataMasker {
     private const val MASK = "***"
 
     private val keyValuePatterns = listOf(
-        Regex("(?i)(password|passwd|pwd|token|accessToken|refreshToken|authorization|cookie|secret|apiKey)=([^&\\s]+)"),
+        Regex("(?i)(password|passwd|pwd|code|token|accessToken|refreshToken|authorization|cookie|secret|apiKey|userId|reporterUserId)=([^&\\s]+)"),
         Regex("(?i)(\"(?:password|passwd|pwd|token|accessToken|refreshToken|authorization|cookie|secret|apiKey)\"\\s*:\\s*\")([^\"]+)(\")"),
     )
     private val bearerTokenPattern = Regex("(?i)Bearer\\s+[A-Za-z0-9._~+/=-]+")
@@ -30,4 +30,10 @@ object SensitiveDataMasker {
 
         return masked
     }
+
+    fun maskPath(path: String): String {
+        return USER_PATH_PATTERN.replace(path, "$1$MASK")
+    }
+
+    private val USER_PATH_PATTERN = Regex("(/api/users/)[^/]+")
 }

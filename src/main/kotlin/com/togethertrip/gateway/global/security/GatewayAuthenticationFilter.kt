@@ -104,8 +104,12 @@ class GatewayAuthenticationFilter(
             exchange.request.path.pathWithinApplication().value(),
             reason,
         )
-        exchange.response.statusCode = HttpStatus.UNAUTHORIZED
-        return exchange.response.setComplete()
+        return GatewayErrorResponseWriter.write(
+            response = exchange.response,
+            status = HttpStatus.UNAUTHORIZED,
+            code = "UNAUTHORIZED",
+            message = "인증이 필요합니다.",
+        )
     }
 
     companion object {
