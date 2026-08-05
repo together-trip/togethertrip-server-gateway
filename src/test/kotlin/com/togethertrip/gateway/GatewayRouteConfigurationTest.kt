@@ -55,6 +55,27 @@ class GatewayRouteConfigurationTest {
             uri = "\${MAIN_SERVICE_URL}",
             path = "Path=/api/**",
         )
+
+        val properties = loadProperties("application-prod.yml")
+        assertEquals("none", properties.getProperty("server.forward-headers-strategy"))
+        assertEquals("true", properties.getProperty("gateway.transport-security.require-https"))
+        assertEquals(
+            "\${GATEWAY_CORS_ALLOWED_ORIGINS}",
+            properties.getProperty("gateway.cors.allowed-origins"),
+        )
+        assertEquals(
+            "\${GATEWAY_TRUSTED_PROXY_CIDRS}",
+            properties.getProperty("gateway.trusted-proxy.cidrs"),
+        )
+        assertEquals(
+            "/api/auth/oauth/apple",
+            properties.getProperty("gateway.security.public-paths[1]"),
+        )
+        assertEquals(
+            "/uploads/post-attachments",
+            properties.getProperty("gateway.security.public-path-prefixes[0]"),
+        )
+        assertEquals(null, properties.getProperty("gateway.security.public-path-prefixes[2]"))
         assertRoute(
             routes = routes,
             id = "uploads-static",
@@ -94,9 +115,7 @@ class GatewayRouteConfigurationTest {
         resourceName: String,
         expectedSize: Int = 4,
     ): List<RouteDefinition> {
-        val properties = YamlPropertiesFactoryBean().apply {
-            setResources(ClassPathResource(resourceName))
-        }.getObject() ?: error("failed to load $resourceName")
+        val properties = loadProperties(resourceName)
 
         val routes = mutableListOf<RouteDefinition>()
         var index = 0
@@ -118,6 +137,10 @@ class GatewayRouteConfigurationTest {
         assertEquals(expectedSize, routes.size)
         return routes
     }
+
+    private fun loadProperties(resourceName: String) = YamlPropertiesFactoryBean().apply {
+        setResources(ClassPathResource(resourceName))
+    }.getObject() ?: error("failed to load $resourceName")
 
     private data class RouteDefinition(
         val id: String,

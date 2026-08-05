@@ -9,7 +9,7 @@ HTTPS 강제, 로그인·신고 rate limit, downstream 5xx 오류 격리, 신규
 ## 범위
 
 - 운영 CORS는 명시한 origin, method, header만 허용하고 wildcard를 금지한다.
-- 운영 환경은 `server.forward-headers-strategy=native`로 프록시가 정규화한 scheme을 사용한다.
+- Gateway가 명시한 trusted proxy CIDR에서 온 forwarded header만 정규화하고 그 외 header는 제거한다.
 - 운영 HTTPS 강제 필터는 request URI 또는 TLS 정보가 HTTPS일 때만 통과시킨다.
 - 클라이언트가 직접 보낸 `X-Forwarded-Proto`만으로 HTTP 요청을 신뢰하지 않는다.
 - 카카오·Apple 로그인과 refresh는 IP 단위, 신고 생성은 인증 사용자 단위로 rate limit한다.
@@ -30,8 +30,8 @@ HTTPS 강제, 로그인·신고 rate limit, downstream 5xx 오류 격리, 신규
 
 - 기존 `/api/**`, `/notification/**` route를 유지하고 전역 필터로 공통 경계 정책을 적용한다.
 - rate limit은 경로와 인증 주체만 판단하며 요청 본문이나 downstream 모델을 해석하지 않는다.
-- forwarded header는 필터에서 직접 파싱하지 않는다. Reactor Netty가 운영의 신뢰 프록시 경계에서 정규화한
-  request URI/TLS 정보만 HTTPS 판단에 사용한다.
+- forwarded header는 Spring `ForwardedHeaderTransformer`에 위임하되, 적용 전에 직접 연결한 원격 주소가
+  trusted proxy CIDR인지 검증한다. 신뢰하지 않은 요청의 forwarded header는 사용하지 않고 제거한다.
 - downstream 4xx는 도메인 계약이므로 그대로 전달하고, 내부정보 위험이 큰 5xx 본문만 Gateway가 격리한다.
 
 ## TDD 시나리오
