@@ -79,8 +79,10 @@ class GatewayAuthenticationFilter(
             gatewaySecurityProperties.publicPathPrefixes.any(path::startsWith)
     }
 
-    private fun isNotificationPath(exchange: ServerWebExchange): Boolean =
-        exchange.request.path.pathWithinApplication().value().startsWith(NOTIFICATION_PATH_PREFIX)
+    private fun isNotificationPath(exchange: ServerWebExchange): Boolean {
+        val path = exchange.request.path.pathWithinApplication().value()
+        return path == NOTIFICATION_ROOT_PATH || path.startsWith(NOTIFICATION_PATH_PREFIX)
+    }
 
     private fun ServerWebExchange.withAuthenticatedIdentity(userId: Long, role: String): ServerWebExchange {
         val authenticatedRequest = request.mutate()
@@ -124,6 +126,7 @@ class GatewayAuthenticationFilter(
         const val USER_ROLE_HEADER = "X-User-Role"
         private const val BEARER_PREFIX = "Bearer "
         private const val LOCAL_TEST_TOKEN_PREFIX = "local-test:"
+        private const val NOTIFICATION_ROOT_PATH = "/notification"
         private const val NOTIFICATION_PATH_PREFIX = "/notification/"
     }
 }
