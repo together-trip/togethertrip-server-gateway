@@ -56,3 +56,15 @@ HTTPS 강제, 로그인·신고 rate limit, downstream 5xx 오류 격리, 신규
 - ingress가 외부 forwarded header를 제거하고 새 값으로 덮어쓰는지 여부
 - 다중 Gateway 인스턴스 전체 rate limit과 WAF 정책
 - 실제 main/notification 배포본을 연결한 운영 HTTPS E2E
+
+## 구현 상태
+
+- 명시적 CORS allowlist와 운영 HTTPS origin 검증을 추가했다.
+- IPv4/IPv6 trusted proxy CIDR 검증과 forwarded header 제거·정규화를 추가했다.
+- XFF chain은 오른쪽에서 trusted proxy를 제외한 첫 주소를 client IP로 사용해 prefix 위조를 차단한다.
+- 운영 HTTPS 강제와 HSTS 응답을 추가했다.
+- 로그인·refresh는 client IP별, 신고 생성은 인증 사용자별로 인스턴스 rate limit을 추가했다.
+- 인증·rate limit·HTTPS·downstream 5xx를 공통 `success=false`, `code`, `message` 응답으로 통일했다.
+- downstream 5xx 본문·내부 header와 요청 로그의 OAuth code·사용자 식별자를 마스킹했다.
+- 제거된 전화번호 인증 경로를 공개 경로에서 제외하고 출시 API route/auth 계약을 보강했다.
+- `./gradlew test` 전체 검증을 통과했다.
