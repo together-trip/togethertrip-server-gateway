@@ -86,7 +86,6 @@ class GatewayRequestLoggingFilter(
                 status,
                 elapsedMs,
                 failure::class.simpleName,
-                failure,
             )
         }
     }
@@ -98,7 +97,7 @@ class GatewayRequestLoggingFilter(
             ?.let { "?$it" }
             ?: ""
 
-        return "${uri.rawPath}$query"
+        return "${SensitiveDataMasker.maskPath(uri.rawPath)}$query"
     }
 
     private fun elapsedMillis(startedAt: Long): Long {

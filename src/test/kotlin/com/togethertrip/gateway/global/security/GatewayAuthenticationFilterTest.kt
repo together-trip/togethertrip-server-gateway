@@ -54,8 +54,6 @@ class GatewayAuthenticationFilterTest {
         strings = [
             "/api/auth/oauth/kakao",
             "/api/auth/oauth/apple",
-            "/api/auth/phone/request",
-            "/api/auth/phone/confirm",
             "/api/auth/refresh",
             "/api/terms",
             "/api/users/nicknames/availability",
@@ -84,6 +82,20 @@ class GatewayAuthenticationFilterTest {
         assertEquals(true, called)
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["/api/auth/phone/request", "/api/auth/phone/confirm"])
+    fun `제거된 전화번호 인증 경로는 더 이상 공개하지 않는다`(path: String) {
+        val exchange = MockServerWebExchange.from(MockServerHttpRequest.post(path).build())
+
+        StepVerifier.create(
+            filter.filter(exchange) { Mono.error(AssertionError("downstream should not be called")) },
+        ).verifyComplete()
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.response.statusCode)
+        assertEquals(true, exchange.response.bodyAsString.block()?.contains("\"success\":false"))
+        assertEquals(true, exchange.response.bodyAsString.block()?.contains("UNAUTHORIZED"))
+    }
+
     @Test
     fun `보호 경로는 토큰이 없으면 401로 차단한다`() {
         val exchange = MockServerWebExchange.from(
@@ -100,8 +112,16 @@ class GatewayAuthenticationFilterTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["/api/users/me", "/notification/api/push-tokens"])
-    fun `계정과 push token 삭제 경로는 공개 경로가 아니다`(path: String) {
+    @ValueSource(
+        strings = [
+            "/api/trips/1/reports",
+            "/api/users/2/blocks",
+            "/api/users/me/blocks",
+            "/api/users/me",
+            "/notification/api/push-tokens",
+        ],
+    )
+    fun `출시 보호 API는 공개 경로가 아니다`(path: String) {
         val exchange = MockServerWebExchange.from(
             MockServerHttpRequest.delete(path).build(),
         )
