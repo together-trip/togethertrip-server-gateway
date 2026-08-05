@@ -29,6 +29,8 @@ services:
   main:
     build:
       context: ../togethertrip-server-main
+    env_file:
+      - ../togethertrip-server-main/src/main/resources/.env
     volumes:
       - ../togethertrip-server-main/uploads:/app/uploads
     environment:
@@ -40,6 +42,13 @@ services:
       SPRING_REDIS_PORT: 6379
       JWT_SECRET: local-development-secret-key-at-least-32-bytes
       OPENAPI_SERVER_URL: http://localhost:8081
+      NOTIFICATION_SQS_QUEUE_URL: ""
+      NOTIFICATION_QUEUE_URL: ""
+      NOTIFICATION_SQS_SENDER_ENABLED: "false"
+      OUTBOX_DISPATCH_ENABLED: "false"
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      AWS_SESSION_TOKEN: ""
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,6 +60,8 @@ services:
   notification:
     build:
       context: ../togethertrip-server-notification
+    env_file:
+      - ../togethertrip-server-notification/src/main/resources/.env
     environment:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/together_trip_notification
@@ -58,6 +69,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: together_trip
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
+      NOTIFICATION_SQS_QUEUE_URL: ""
+      NOTIFICATION_QUEUE_URL: ""
+      NOTIFICATION_SQS_CONSUMER_ENABLED: "false"
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      AWS_SESSION_TOKEN: ""
     depends_on:
       postgres:
         condition: service_healthy

@@ -29,6 +29,24 @@ spring:
 
 server:
   port: 8080
+  forward-headers-strategy: none
+
+gateway:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:8080
+  trusted-proxy:
+    cidrs:
+      - 127.0.0.1/32
+      - "::1/128"
+  transport-security:
+    require-https: false
+  rate-limit:
+    enabled: true
+    login-requests-per-minute: 20
+    report-requests-per-minute: 5
+    max-tracked-keys: 20000
 
 jwt:
   secret: ${JWT_SECRET:local-development-secret-key-at-least-32-bytes}
