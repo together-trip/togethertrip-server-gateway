@@ -226,6 +226,58 @@ class GatewayAuthenticationFilterTest {
     }
 
     @Test
+    fun `notification local-test identity는 검증한 사용자 헤더만 downstream에 전달한다`() {
+        val localTestFilter = GatewayAuthenticationFilter(
+            jwtTokenProvider = JwtTokenProvider(jwtProperties),
+            gatewaySecurityProperties = GatewaySecurityProperties(),
+            localTestEnabled = true,
+        )
+        val exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/notification/api/notifications")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer local-test:admin:321")
+                .header(GatewayAuthenticationFilter.USER_ID_HEADER, "999")
+                .header(GatewayAuthenticationFilter.USER_ROLE_HEADER, "USER")
+                .build(),
+        )
+
+        StepVerifier.create(
+            localTestFilter.filter(exchange) { routedExchange ->
+                assertEquals(
+                    "321",
+                    routedExchange.request.headers.getFirst(GatewayAuthenticationFilter.USER_ID_HEADER),
+                )
+                assertEquals(
+                    "ADMIN",
+                    routedExchange.request.headers.getFirst(GatewayAuthenticationFilter.USER_ROLE_HEADER),
+                )
+                Mono.empty()
+            },
+        ).verifyComplete()
+    }
+
+    @Test
+    fun `notification의 모호한 local-test 토큰은 401로 차단한다`() {
+        val localTestFilter = GatewayAuthenticationFilter(
+            jwtTokenProvider = JwtTokenProvider(jwtProperties),
+            gatewaySecurityProperties = GatewaySecurityProperties(),
+            localTestEnabled = true,
+        )
+        val exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/notification/api/notifications")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer local-test:verified:swagger")
+                .build(),
+        )
+
+        StepVerifier.create(
+            localTestFilter.filter(exchange) {
+                Mono.error(AssertionError("downstream should not be called"))
+            },
+        ).verifyComplete()
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.response.statusCode)
+    }
+
+    @Test
     fun `공개 경로에서도 spoofing 사용자 헤더는 제거한다`() {
         val exchange = MockServerWebExchange.from(
             MockServerHttpRequest.post("/api/auth/refresh")

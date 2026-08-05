@@ -12,6 +12,7 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.cloud.gateway.route.RouteLocator
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder
 import org.springframework.context.annotation.Bean
+import org.springframework.http.HttpMethod
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import reactor.core.publisher.Mono
@@ -24,7 +25,10 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 
 @ActiveProfiles("test")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = ["auth.local-test.enabled=true"],
+)
 class GatewayNotificationRoutingIntegrationTest {
 
     @LocalServerPort
@@ -64,6 +68,36 @@ class GatewayNotificationRoutingIntegrationTest {
             .expectStatus().isUnauthorized
 
         assertEquals(0, receivedCount.get())
+    }
+
+    @Test
+    fun `local-test 사용자는 알림 목록 path와 identity를 유지해 전달한다`() {
+        assertLocalTestNotificationRoute(HttpMethod.GET, "/notification/api/notifications")
+    }
+
+    @Test
+    fun `local-test 사용자는 push token path와 identity를 유지해 전달한다`() {
+        assertLocalTestNotificationRoute(HttpMethod.POST, "/notification/api/push-tokens")
+    }
+
+    private fun assertLocalTestNotificationRoute(method: HttpMethod, path: String) {
+        receivedRequest.set(null)
+        receivedCount.set(0)
+
+        webTestClient().method(method)
+            .uri(path)
+            .header("Authorization", "Bearer local-test:user:321")
+            .header(GatewayAuthenticationFilter.USER_ID_HEADER, "999")
+            .header(GatewayAuthenticationFilter.USER_ROLE_HEADER, "ADMIN")
+            .exchange()
+            .expectStatus().isOk
+
+        val request = receivedRequest.get()
+            ?: throw AssertionError("notification downstream should receive request")
+        assertEquals(1, receivedCount.get())
+        assertEquals(path, request.uri)
+        assertEquals("321", request.userId)
+        assertEquals("USER", request.userRole)
     }
 
     private fun createAccessToken(userId: Long): String {
