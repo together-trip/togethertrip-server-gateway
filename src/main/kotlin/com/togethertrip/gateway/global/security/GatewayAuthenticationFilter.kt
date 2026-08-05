@@ -37,6 +37,11 @@ class GatewayAuthenticationFilter(
             ?: return unauthorized(sanitizedExchange, "missing bearer token")
 
         if (localTestEnabled && token.startsWith(LOCAL_TEST_TOKEN_PREFIX)) {
+            if (isNotificationPath(sanitizedExchange)) {
+                val identity = LocalTestIdentity.parse(token)
+                    ?: return unauthorized(sanitizedExchange, "invalid notification local-test identity")
+                return chain.filter(sanitizedExchange.withAuthenticatedIdentity(identity.userId, identity.role.name))
+            }
             return chain.filter(sanitizedExchange)
         }
 
@@ -50,16 +55,7 @@ class GatewayAuthenticationFilter(
             return unauthorized(sanitizedExchange, "unsupported token type")
         }
 
-        val authenticatedRequest = sanitizedExchange.request.mutate()
-            .header(USER_ID_HEADER, claims.userId.toString())
-            .header(USER_ROLE_HEADER, claims.role.name)
-            .build()
-
-        return chain.filter(
-            sanitizedExchange.mutate()
-                .request(authenticatedRequest)
-                .build(),
-        )
+        return chain.filter(sanitizedExchange.withAuthenticatedIdentity(claims.userId, claims.role.name))
     }
 
     override fun getOrder(): Int {
@@ -81,6 +77,17 @@ class GatewayAuthenticationFilter(
         val path = exchange.request.path.pathWithinApplication().value()
         return path in gatewaySecurityProperties.publicPaths ||
             gatewaySecurityProperties.publicPathPrefixes.any(path::startsWith)
+    }
+
+    private fun isNotificationPath(exchange: ServerWebExchange): Boolean =
+        exchange.request.path.pathWithinApplication().value().startsWith(NOTIFICATION_PATH_PREFIX)
+
+    private fun ServerWebExchange.withAuthenticatedIdentity(userId: Long, role: String): ServerWebExchange {
+        val authenticatedRequest = request.mutate()
+            .header(USER_ID_HEADER, userId.toString())
+            .header(USER_ROLE_HEADER, role)
+            .build()
+        return mutate().request(authenticatedRequest).build()
     }
 
     private fun resolveToken(exchange: ServerWebExchange): String? {
@@ -117,5 +124,6 @@ class GatewayAuthenticationFilter(
         const val USER_ROLE_HEADER = "X-User-Role"
         private const val BEARER_PREFIX = "Bearer "
         private const val LOCAL_TEST_TOKEN_PREFIX = "local-test:"
+        private const val NOTIFICATION_PATH_PREFIX = "/notification/"
     }
 }
