@@ -57,13 +57,21 @@ class SensitiveEndpointRateLimitFilterTest {
         val transformer = TrustedProxyForwardedHeaderConfiguration(
             GatewayTrustedProxyProperties().apply { cidrs = listOf("10.0.0.0/8") },
         ).forwardedHeaderTransformer()
-        val firstClient = proxiedLogin(transformer, proxyIp = "10.0.0.10", clientIp = "198.51.100.101")
+        val firstClient = proxiedLogin(
+            transformer,
+            proxyIp = "10.0.0.10",
+            clientIp = "203.0.113.66, 198.51.100.101",
+        )
         val secondClient = proxiedLogin(transformer, proxyIp = "10.0.0.10", clientIp = "198.51.100.102")
 
         assertPass(firstClient)
         assertPass(secondClient)
 
-        val limited = proxiedLogin(transformer, proxyIp = "10.0.0.10", clientIp = "198.51.100.101")
+        val limited = proxiedLogin(
+            transformer,
+            proxyIp = "10.0.0.10",
+            clientIp = "203.0.113.77, 198.51.100.101",
+        )
         StepVerifier.create(filter.filter(limited) { Mono.error(AssertionError("downstream should not be called")) })
             .verifyComplete()
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.response.statusCode)

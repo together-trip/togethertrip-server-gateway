@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.web.server.adapter.ForwardedHeaderTransformer
 import java.net.InetAddress
+import java.net.InetSocketAddress
 
 @Component
 @ConfigurationProperties(prefix = "gateway.trusted-proxy")
@@ -30,12 +31,58 @@ class TrustedProxyForwardedHeaderConfiguration(
             override fun apply(request: ServerHttpRequest): ServerHttpRequest {
                 val remoteAddress = request.remoteAddress?.address
                 return if (remoteAddress != null && trustedNetworks.any { it.contains(remoteAddress) }) {
-                    trustedTransformer.apply(request)
+                    val clientAddress = resolveClientAddress(request, trustedNetworks)
+                    trustedTransformer.apply(request).mutate()
+                        .remoteAddress(clientAddress)
+                        .build()
                 } else {
                     removeOnlyTransformer.apply(request)
                 }
             }
         }
+    }
+
+    private fun resolveClientAddress(
+        request: ServerHttpRequest,
+        trustedNetworks: List<IpNetwork>,
+    ): InetSocketAddress {
+        val directAddress = requireNotNull(request.remoteAddress)
+        val forwardedAddresses = forwardedForValues(request)
+            .mapNotNull(::parseAddressLiteral)
+
+        val clientAddress = forwardedAddresses.asReversed()
+            .firstOrNull { candidate -> trustedNetworks.none { it.contains(candidate) } }
+            ?: return directAddress
+        return InetSocketAddress(clientAddress, directAddress.port)
+    }
+
+    private fun forwardedForValues(request: ServerHttpRequest): List<String> {
+        val forwarded = request.headers.getFirst("Forwarded")
+        if (forwarded != null) {
+            return forwarded.split(',').mapNotNull { element ->
+                element.split(';')
+                    .map(String::trim)
+                    .firstOrNull { it.startsWith("for=", ignoreCase = true) }
+                    ?.substringAfter('=')
+            }
+        }
+        return request.headers.getFirst("X-Forwarded-For")
+            ?.split(',')
+            ?.map(String::trim)
+            ?: emptyList()
+    }
+
+    private fun parseAddressLiteral(value: String): InetAddress? {
+        var candidate = value.trim().removeSurrounding("\"")
+        if (candidate.startsWith("[") && candidate.contains(']')) {
+            candidate = candidate.substringAfter('[').substringBefore(']')
+        } else if (candidate.count { it == ':' } == 1 && candidate.contains('.')) {
+            candidate = candidate.substringBefore(':')
+        }
+        if (!IP_LITERAL_PATTERN.matches(candidate)) {
+            return null
+        }
+        return runCatching { InetAddress.getByName(candidate) }.getOrNull()
     }
 
     private data class IpNetwork(
@@ -74,5 +121,9 @@ class TrustedProxyForwardedHeaderConfiguration(
                 return IpNetwork(address.address, prefixLength)
             }
         }
+    }
+
+    companion object {
+        private val IP_LITERAL_PATTERN = Regex("[0-9A-Fa-f:.]+")
     }
 }

@@ -49,6 +49,20 @@ class TrustedProxyForwardedHeaderConfigurationTest {
     }
 
     @Test
+    fun `신뢰 proxy가 append한 XFF의 오른쪽 client IP를 사용해 prefix 위조를 무시한다`() {
+        val request = MockServerHttpRequest.get("http://gateway/api/trips")
+            .remoteAddress(InetSocketAddress("10.20.30.40", 43100))
+            .header("X-Forwarded-Proto", "https")
+            .header("X-Forwarded-For", "203.0.113.99, 198.51.100.17")
+            .build()
+
+        val transformed = transformer.apply(request)
+
+        assertEquals("198.51.100.17", transformed.remoteAddress?.hostString)
+        assertNull(transformed.headers.getFirst("X-Forwarded-For"))
+    }
+
+    @Test
     fun `IPv6 trusted proxy CIDR도 지원한다`() {
         val request = MockServerHttpRequest.get("http://gateway/api/trips")
             .remoteAddress(InetSocketAddress("2001:db8::10", 43100))
