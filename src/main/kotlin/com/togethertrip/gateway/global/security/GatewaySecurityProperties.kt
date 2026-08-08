@@ -12,6 +12,8 @@ class GatewaySecurityProperties {
         "/api/auth/refresh",
         "/api/terms",
         "/api/users/nicknames/availability",
+        // 정산 공유 링크는 공유 토큰 자체가 접근 수단이라 인증을 요구하지 않는다.
+        "/api/settlement-shares",
         "/health",
         "/actuator/health",
         "/swagger-ui.html",

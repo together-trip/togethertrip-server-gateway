@@ -19,6 +19,7 @@ class GatewayRateLimitProperties {
     var enabled: Boolean = true
     var loginRequestsPerMinute: Int = 20
     var reportRequestsPerMinute: Int = 5
+    var settlementShareRequestsPerMinute: Int = 60
     var maxTrackedKeys: Int = 20_000
 }
 
@@ -46,10 +47,20 @@ class SensitiveEndpointRateLimitFilter(
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE + 20
 
     private fun resolvePolicy(exchange: ServerWebExchange): RateLimitPolicy? {
+        val path = exchange.request.path.pathWithinApplication().value()
+
+        // 인증 없이 열리는 경로라 유출된 토큰을 대량으로 조회하는 트래픽을 제한한다.
+        if (exchange.request.method == HttpMethod.GET && path == SETTLEMENT_SHARE_PATH) {
+            val address = exchange.request.remoteAddress?.hostString ?: UNKNOWN_CLIENT
+            return RateLimitPolicy(
+                "settlement-share:$address",
+                properties.settlementShareRequestsPerMinute,
+            )
+        }
+
         if (exchange.request.method != HttpMethod.POST) {
             return null
         }
-        val path = exchange.request.path.pathWithinApplication().value()
         if (path in LOGIN_PATHS) {
             val address = exchange.request.remoteAddress?.hostString ?: UNKNOWN_CLIENT
             return RateLimitPolicy("login:$address", properties.loginRequestsPerMinute)
@@ -104,6 +115,7 @@ class SensitiveEndpointRateLimitFilter(
             "/api/auth/refresh",
         )
         private val REPORT_PATH = Regex("^/api/trips/[^/]+/reports$")
+        private const val SETTLEMENT_SHARE_PATH = "/api/settlement-shares"
         private const val UNKNOWN_CLIENT = "unknown"
         private const val WINDOW_SECONDS = 60L
         private const val WINDOW_MILLIS = WINDOW_SECONDS * 1000

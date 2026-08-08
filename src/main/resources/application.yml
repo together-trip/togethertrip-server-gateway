@@ -46,6 +46,7 @@ gateway:
     enabled: true
     login-requests-per-minute: 20
     report-requests-per-minute: 5
+    settlement-share-requests-per-minute: 60
     max-tracked-keys: 20000
 
 jwt:

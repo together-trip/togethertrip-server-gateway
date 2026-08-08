@@ -64,6 +64,7 @@ class GatewayAuthenticationFilterTest {
             "/v3/api-docs",
             "/uploads/post-attachments/sample.jpg",
             "/uploads/user-profile-images/sample.jpg",
+            "/api/settlement-shares",
         ],
     )
     fun `main 공개 경로는 gateway에서도 토큰 없이 통과한다`(path: String) {

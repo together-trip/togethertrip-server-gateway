@@ -15,6 +15,7 @@ class SensitiveEndpointRateLimitFilterTest {
         enabled = true
         loginRequestsPerMinute = 1
         reportRequestsPerMinute = 1
+        settlementShareRequestsPerMinute = 1
     }
     private val filter = SensitiveEndpointRateLimitFilter(properties)
 
@@ -45,6 +46,36 @@ class SensitiveEndpointRateLimitFilterTest {
 
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.response.statusCode)
         assertPass(report(userId = "124"))
+    }
+
+    @Test
+    fun `같은 IP의 정산 공유 조회가 한도를 넘으면 429를 반환한다`() {
+        assertPass(shareLookup("192.0.2.50"))
+        val limited = shareLookup("192.0.2.50")
+
+        StepVerifier.create(filter.filter(limited) { Mono.error(AssertionError("downstream should not be called")) })
+            .verifyComplete()
+
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.response.statusCode)
+    }
+
+    @Test
+    fun `정산 공유 rate limit은 다른 remote address를 독립 key로 사용한다`() {
+        assertPass(shareLookup("192.0.2.60"))
+        assertPass(shareLookup("192.0.2.61"))
+    }
+
+    @Test
+    fun `일반 GET API는 rate limit 대상이 아니다`() {
+        repeat(3) {
+            assertPass(
+                MockServerWebExchange.from(
+                    MockServerHttpRequest.get("/api/trips/1")
+                        .remoteAddress(InetSocketAddress("192.0.2.70", 43100))
+                        .build(),
+                ),
+            )
+        }
     }
 
     @Test
@@ -104,6 +135,12 @@ class SensitiveEndpointRateLimitFilterTest {
 
     private fun post(path: String, ip: String): MockServerWebExchange = MockServerWebExchange.from(
         MockServerHttpRequest.post(path)
+            .remoteAddress(InetSocketAddress(ip, 43100))
+            .build(),
+    )
+
+    private fun shareLookup(ip: String): MockServerWebExchange = MockServerWebExchange.from(
+        MockServerHttpRequest.get("/api/settlement-shares?token=share-token")
             .remoteAddress(InetSocketAddress(ip, 43100))
             .build(),
     )
